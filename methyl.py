@@ -8,6 +8,8 @@ import os
 
 from Bio import SeqIO
 import numpy as np
+from gepyto.structures.sequences import Sequence
+import matplotlib.pyplot as plt
 
 
 def main():
@@ -99,7 +101,39 @@ def main():
     contigs_fwd = os.path.join(step3_dir, "fwd", "contigs.fa")
     contigs_rev = os.path.join(step3_dir, "rev", "contigs.fa")
 
+    # Step 4: Compare contigs.
+    compare_contigs(contigs_fwd, contigs_rev, options.bbc_k,
+                    options.plot_contig_distances)
 
+
+def compare_contigs(fwd, rev, k, plot=False):
+    """Compare fastq contigs.
+
+    Takes a path to the forward and to the reverse fastq contigs.
+
+    """
+    bbcs = {
+        "fwd": {},
+        "rev": {},    
+    }
+
+    for mode, fastq in (("fwd", fwd), ("rev", rev)):
+        with open(fastq) as f:
+            for record in SeqIO.parse(f, "fasta"):
+                 # Compute the bbc for this record.
+                 seq = Sequence(record.id, record.seq, "DNA")
+                 a = set(list("ATGC"))
+                 bbcs[mode][record.id] = seq.bbc(k, alphabet=a).reshape(1, 16)
+
+    if plot:
+        distances = []
+        for contig1, bbc1 in bbcs["fwd"].items():
+            for contig2, bbc2 in bbcs["rev"].items():
+                distances.append(np.sum((bbc1 - bbc2) ** 2))
+
+        distances = np.array(distances)
+        plt.hist(distances, bins=40, edgecolor="white", facecolor="black")
+        plt.show()
 
 
 def parse_arguments():
@@ -139,6 +173,14 @@ def parse_arguments():
 
     parser.add_argument("--velvet-k",
         help="The velvet hash length.", type=int, default=30
+    )
+
+    parser.add_argument("--bbc-k",
+        help="k radius for the BBC.", type=int, default=20
+    )
+
+    parser.add_argument("--plot-contig-distances",
+        help="Plot pairwise contig distances.", action="store_true"
     )
 
     return parser.parse_args()
