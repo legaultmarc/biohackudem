@@ -6,10 +6,11 @@ from subprocess import Popen, PIPE
 import argparse
 import os
 
-from Bio import SeqIO
+from Bio import SeqIO, pairwise2
 import numpy as np
 from gepyto.structures.sequences import Sequence
 import matplotlib.pyplot as plt
+import pandas as pd
 
 
 def main():
@@ -102,8 +103,30 @@ def main():
     contigs_rev = os.path.join(step3_dir, "rev", "contigs.fa")
 
     # Step 4: Compare contigs.
-    compare_contigs(contigs_fwd, contigs_rev, options.bbc_k,
-                    options.plot_contig_distances)
+    sequences, dists = compare_contigs(contigs_fwd, contigs_rev, options.bbc_k,
+                                       options.plot_contig_distances)
+
+
+    dists = dists.sort("dist")
+    cutoff = dists["dist"].mean() - dists["dist"].std()
+    paired_contigs = []
+    for row in dists.iterrows():
+        if row.dist > cutoff:
+            break
+
+        paired_contigs.append((row.contig1, row.contig2))
+    
+    methyl_found = 0
+    # We need to align paired contigs to identify variation.
+    for contig1, contig2 in paired_contigs:
+        seq1 = sequences["fwd"][contig1]
+        seq2 = sequences["rev"][contig2]
+        alignments = pairwise2.align.localxx(seq1.seq, seq2.seq)
+        start, end = alignments[3], alignments[4]
+
+        for pos in xrange(start,end+1):
+            if alignments[0][pos]=='C' and alignments[1][pos]=='C' or
+                    alignments[1][pos]=='A' and alignments[0][pos]=='A':
 
 
 def compare_contigs(fwd, rev, k, plot=False):
@@ -117,23 +140,33 @@ def compare_contigs(fwd, rev, k, plot=False):
         "rev": {},    
     }
 
+    sequences = {
+        "fwd": {},
+        "rev": {},
+    }
+
     for mode, fastq in (("fwd", fwd), ("rev", rev)):
         with open(fastq) as f:
             for record in SeqIO.parse(f, "fasta"):
                  # Compute the bbc for this record.
                  seq = Sequence(record.id, record.seq, "DNA")
+                 sequences[mode][record.id] = seq
                  a = set(list("ATGC"))
                  bbcs[mode][record.id] = seq.bbc(k, alphabet=a).reshape(1, 16)
 
-    if plot:
-        distances = []
-        for contig1, bbc1 in bbcs["fwd"].items():
-            for contig2, bbc2 in bbcs["rev"].items():
-                distances.append(np.sum((bbc1 - bbc2) ** 2))
 
-        distances = np.array(distances)
-        plt.hist(distances, bins=40, edgecolor="white", facecolor="black")
+    distances = []
+    for contig1, bbc1 in bbcs["fwd"].items():
+        for contig2, bbc2 in bbcs["rev"].items():
+            distances.append((contig1, contig2, np.sum((bbc1 - bbc2) ** 2)))
+    distances = pd.DataFrame(distances, columns=["contig1", "contig2", "dist"])
+
+    if plot:
+        dists = distances["dist"].values
+        plt.hist(dists, bins=40, edgecolor="white", facecolor="black")
         plt.show()
+
+    return sequences, distances
 
 
 def parse_arguments():
