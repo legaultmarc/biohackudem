@@ -121,6 +121,7 @@ def main():
     for contig1, contig2 in paired_contigs:
         seq1 = sequences["fwd"][contig1]
         seq2 = sequences["rev"][contig2]
+        break
         alignments = pairwise2.align.localxx(seq1.seq, seq2.seq)[0]
         start, end = alignments[3], alignments[4]
 
@@ -128,7 +129,7 @@ def main():
             if alignments[0][pos]=='C' and alignments[1][pos]=='C' or alignments[1][pos]=='A' and alignments[0][pos]=='A':
                 methyl_found += 1
 
-    print methyfound
+    print(methyfound)
 
 
 def compare_contigs(fwd, rev, k, plot=False):
