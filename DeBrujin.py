@@ -100,7 +100,7 @@ class DeBruijnGraph(object):
 
 if __name__ == '__main__':
 
-    strlist = ['ATGGCGTGCAATG']
+    strlist = ['ATGGCGTG', 'TGCCGTGA']
 
     graph = DeBruijnGraph(strlist, 3)
     for key, value in graph.graph.items():
