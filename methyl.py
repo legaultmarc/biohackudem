@@ -29,7 +29,7 @@ def main():
     sequence_lengths = np.array(sequence_lengths)
     mean_seq_length = int(round(np.mean(sequence_lengths)))
     std_seq_length = np.std(sequence_lengths)
-    
+
 
     # Step 2: Merge the reads for reverse and forward.
     # This step is dependant on the FLASH tool.
@@ -115,18 +115,20 @@ def main():
             break
 
         paired_contigs.append((row.contig1, row.contig2))
-    
+
     methyl_found = 0
     # We need to align paired contigs to identify variation.
     for contig1, contig2 in paired_contigs:
         seq1 = sequences["fwd"][contig1]
         seq2 = sequences["rev"][contig2]
-        alignments = pairwise2.align.localxx(seq1.seq, seq2.seq)
+        alignments = pairwise2.align.localxx(seq1.seq, seq2.seq)[0]
         start, end = alignments[3], alignments[4]
 
         for pos in xrange(start,end+1):
-            if alignments[0][pos]=='C' and alignments[1][pos]=='C' or
-                    alignments[1][pos]=='A' and alignments[0][pos]=='A':
+            if alignments[0][pos]=='C' and alignments[1][pos]=='C' or alignments[1][pos]=='A' and alignments[0][pos]=='A':
+                methyl_found += 1
+
+    print methyfound
 
 
 def compare_contigs(fwd, rev, k, plot=False):
@@ -137,7 +139,7 @@ def compare_contigs(fwd, rev, k, plot=False):
     """
     bbcs = {
         "fwd": {},
-        "rev": {},    
+        "rev": {},
     }
 
     sequences = {
