@@ -57,27 +57,28 @@ class DeBruijnGraph(object):
             return self.kmerseq[-1]
 
     def __init__(self, readlist, k, colorcode=1):
-        self.G = DeBruijnGraph.Node(color=colorcode)
+        # this graph contains the list of kmer and the corresponding note
+        self.graph = {}
         self.k = k
 
         for read in readlist:
-            current_node = self.G
+            previous_node = None
             for node in self.toKmer(read, k, colorcode):
-                #This is the first node
-                adjacent_found = current_node.is_adjacent(node)
-                if(adjacent_found):
-                    adjacent_found.visited += 1
-                    current_node = adjacent_found
-                else :
-                    if(current_node.is_root()):
-                        current_node.add_edge(node, "")
-                    else :
-                        current_node.add_edge(node, node.get_possible_chev())
+                # add a new node or return the node at key in the dict
+                self.graph[node.kmerseq] = self.graph.get(node.kmerseq, node)
+                self.graph[node.kmerseq].visited+=1
 
-                    current_node = node
+                # this is the first node
+                if not previous_node:
+                    previous_node = node
+
+                # we have a new node, add edge between new node and previous node
+                else :
+                    self.graph[previous_node.kmerseq].add_edge(self.graph[node.kmerseq], self.graph[node.kmerseq].get_possible_chev())
+
 
     def bfs(self):
-        visited, queue = [], [self.G]
+        visited, queue = [], self.graph.values()
         while queue:
             vertex = queue.pop(0)
             if vertex not in visited:
@@ -88,7 +89,6 @@ class DeBruijnGraph(object):
 
     def find_polymorphisme(self):
         pass
-
 
 if __name__ == '__main__':
 
