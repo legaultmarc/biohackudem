@@ -1,13 +1,15 @@
 class DeBruijnGraph(object):
     """ A de bruijn multigraph built from a collection of strings.
     """
+
     reverse_rule = {'C':['C'], 'G':['G', 'A'], 'T':['C', 'T'], 'A':'A'}
+
     @staticmethod
-    def toKmer(strg, k):
+    def toKmer(strg, k, color=1):
         """return all the kmer of len k found in a String
         """
         for i in xrange(0, len(strg)-(k-1)):
-            yield DeBruijnGraph.Node(strg[i:i+k])
+            yield DeBruijnGraph.Node(strg[i:i+k], color=color)
 
     class Edge(object):
         """An edge that link two node
@@ -35,7 +37,7 @@ class DeBruijnGraph(object):
             return hash(self.kmerseq)
 
         def __repr__(self):
-            return "%s:%s"%(self.kmerseq, self.visited)
+            return "%s:%s(%i)"%(self.kmerseq, self.visited, self.color)
 
         def __eq__(self, other):
             # Comparision of node
@@ -60,7 +62,7 @@ class DeBruijnGraph(object):
 
         for read in readlist:
             current_node = self.G
-            for node in self.toKmer(read, k):
+            for node in self.toKmer(read, k, colorcode):
                 #This is the first node
                 adjacent_found = current_node.is_adjacent(node)
                 if(adjacent_found):
