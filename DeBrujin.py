@@ -95,15 +95,45 @@ class DeBruijnGraph(object):
 
         return visited
 
+    def create_gml(self):
+        keys = {}
+        id = 1
+
+        print "graph ["
+        print "\tcomment \"Graph\""
+        print "\tdirected 1"
+
+        for seq in self.graph:
+            if seq not in keys:
+                keys[seq] = id
+                id += 1
+            this_id = keys[seq]
+            print "\tnode ["
+            print "\t\tid {}".format(this_id)
+            print "\t\tlabel \"{}\"".format(seq)
+            print "\t]"
+            for e in self.graph[seq].adjacent_nodes:
+                if e.kmerseq not in keys:
+                    keys[e.kmerseq] = id
+                    id += 1
+                print "\tedge ["
+                print "\t\tsource {}".format(keys[seq])
+                print "\t\ttarget {}".format(keys[e.kmerseq])
+                print "\t\tlabel \"{}\"".format(seq + e.kmerseq[-1])
+                print "\t]"
+
+        print "]"
+
     def find_polymorphisme(self):
         pass
 
 if __name__ == '__main__':
 
-    strlist = ['ATGGCGTG', 'TGCCGTGA']
+    strlist = ['TCGG', 'CGGTA', 'CGGT', 'GTAT']
 
     graph = DeBruijnGraph(strlist, 3)
     for key, value in graph.graph.items():
         print "%s : %s"%(value, value.edge_list)
     print "\n\n"
-    print graph.bfs()
+
+    graph.create_gml()
