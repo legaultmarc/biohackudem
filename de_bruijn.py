@@ -17,12 +17,23 @@ class Node():
         # Tuples of right-character to node.
         self.edges = []
 
-        # The node value is the kmer.
         self.value = seq[:k] if len(seq) > k else seq
+
+        # Memorize this node.
+        node_pointers[self.value] = self
 
         # Add adjacent.
         if len(seq) != k:
-            self.edges.append((seq[k], Node(seq[1:], k)))
+            self.edges.append((seq[k], Node.node_factory(seq[1:], k)))
+
+    @classmethod
+    def node_factory(cls, seq, k):
+        if len(seq) == k:
+            return cls(seq, k)
+        elif seq[:k] in node_pointers:
+            return node_pointers[seq[:k]]
+        else:
+            return cls(seq, k)
 
     def __repr__(self):
         return "<{}>".format(self.value)
